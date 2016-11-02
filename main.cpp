@@ -27,7 +27,6 @@ int key_status[256] = {0};
 int main(int argc, char** argv)
 {
     readXMLFile(argv[1]);
-
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
     glutInitWindowSize(MainWindow.getWidth(),MainWindow.getHeight());

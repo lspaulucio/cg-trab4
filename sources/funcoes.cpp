@@ -355,8 +355,7 @@ void idle(void)
         START_FLAG = true;
     }
 
-    if(START_FLAG)
-    {
+    if(START_FLAG) {
         updateClock(timeDiference);
         // Collision verification
         tx = player.getXc();
@@ -367,8 +366,7 @@ void idle(void)
         // Test new position x
         player.setXc(tx + move_vector[X_AXIS]);
 
-        for (list<Carro>::iterator it = enemies.begin(); it != enemies.end(); it++)
-        {
+        for (list<Carro>::iterator it = enemies.begin(); it != enemies.end(); it++) {
             teste = teste && (*it).outsideCircle(player);
         }
 
@@ -380,18 +378,62 @@ void idle(void)
         // Test new position y
         player.setYc(ty + move_vector[Y_AXIS]);
 
-        for (list<Carro>::iterator it = enemies.begin(); it != enemies.end(); it++)
-        {
+        for (list<Carro>::iterator it = enemies.begin(); it != enemies.end(); it++) {
             teste = teste && (*it).outsideCircle(player);
         }
 
         if (arena[0].insideCircle(player) && arena[1].outsideCircle(player) && teste);
-        else
-        {
+        else {
             player.setYc(ty);
         }
-        // End collision verification
+        // End player collision verification
 
+//      ///////////////////////////////////////// ENEMY COLISION VERIFICATION //////////////////////////////////////////
+
+        for(list<Carro>::iterator en = enemies.begin(); en != enemies.end(); en++)
+        {
+            float *move_vector = en->randomMove(timeDiference);
+
+//            cout << "x " << move_vector[0] << " y " << move_vector[1] << endl;
+
+            tx = en->getXc();
+            ty = en->getYc();
+
+            bool teste = true;
+
+            // Test new position x
+            en->setXc(tx + move_vector[X_AXIS]);
+
+            for (list<Carro>::iterator it = enemies.begin(); it != enemies.end(); it++)
+            {
+                if(en != it)
+                    teste = teste && (*en).outsideCircle(*it);
+            }
+
+            teste = teste && en->outsideCircle(player);
+
+            if (arena[0].insideCircle(*en) && arena[1].outsideCircle(*en) && teste);
+            else
+            {
+                en->setXc(tx);
+            }
+
+            // Test new position y
+            en->setYc(ty + move_vector[Y_AXIS]);
+
+            for (list<Carro>::iterator it = enemies.begin(); it != enemies.end(); it++)
+            {
+                if(en != it)
+                    teste = teste && (*en).outsideCircle(*it);
+            }
+
+            if (arena[0].insideCircle(*en) && arena[1].outsideCircle(*en) && teste);
+            else
+            {
+                en->setYc(ty);
+            }
+//          ////////////////////////////////  End enemy collision verification ///////////////////////////////////
+        }
 
         //    ///////////////////////////////////////// ENEMIES SHOTS ////////////////////////////////////////
         static float shotTime = 0;
@@ -561,9 +603,11 @@ void mouse(int key, int state, int x, int y)
 
         player.setGunRotation(theta);
 
-        Tiro t = player.shoot();
+        if(START_FLAG) {
+            Tiro t = player.shoot();
 //        cout << "ShotID " << t.getId() << endl;
-        playerShots.push_back(t);
+            playerShots.push_back(t);
+        }
     }
 }
 
@@ -587,7 +631,7 @@ void printTime(GLfloat x, GLfloat y) //Printing elapsed time
     glColor3f(0.0,0.0,0.0);
     //Create a string to be printed
     char *tmpStr;
-    sprintf(str, "Elapsed Time: %d s", seconds);
+    sprintf(str, "Lap Time: %d s", seconds);
     //Define the position to start printing
     glRasterPos2f(x, y);
     //Print  the first Char with a certain font
@@ -606,7 +650,7 @@ void updateClock(double time) {
     const int SECOND = 1000;
     static float elapsedTime = 0;
     elapsedTime += time;
-    cout << elapsedTime << endl;
+//    cout << elapsedTime << endl;
 
     if (START_FLAG)
     {

@@ -26,9 +26,9 @@ public:
 
     void setMoving(bool moving);
 
-    void setShootFrequence(float freq);
-
     float getShootFrequence();
+
+    void setShootFrequence(float freq);
 
     float getCarSpeed() const;
 
@@ -65,6 +65,8 @@ public:
     void draw(char type = 'p');
 
     float* move(bool direction, double time);
+
+    float* randomMove(double time);
 
     Tiro shoot();
 

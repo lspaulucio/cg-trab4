@@ -1,4 +1,5 @@
 #include "carro.h"
+#include <time.h>
 
 Carro::Carro()
 {
@@ -432,6 +433,106 @@ float* Carro::move(bool direction, double time)
 
         position[X_AXIS] = -(this->getCarSpeed() * time * cos(this->getCarRotation() * M_PI / 180.0));
         position[Y_AXIS] = -(this->getCarSpeed() * time * sin(this->getCarRotation() * M_PI / 180.0));
+        position[Z_AXIS] = 0;
+    }
+
+    return position;
+}
+
+float* Carro::randomMove(double timeDif)
+{
+    static float position[3];
+    float CAR_ROTATION_STEP = 2;
+    static float elapsedTime = 0;
+
+    int randomWheel, randomGun, randomDirection;
+
+    elapsedTime += timeDif;
+
+    if(elapsedTime >= 1000) {
+        randomWheel = rand() % 1000;
+        randomGun = rand() % 1000;
+        randomDirection = rand() % 1000;
+        elapsedTime = elapsedTime - 1000;
+    }
+
+    if(randomDirection < 500)
+    {
+        randomDirection = 0;
+    }
+    else {
+        randomDirection = 1;
+    }
+
+    if(randomWheel < 500)
+    {
+        setWheelRotation(getWheelRotation() + 2);
+    }
+    else
+    {
+        setWheelRotation(getWheelRotation() - 2);
+    }
+
+    if(randomGun < 500)
+    {
+        setGunRotation(getGunRotation() + 2);
+    }
+    else
+    {
+        setGunRotation(getGunRotation() - 2);
+    }
+
+    float carRotation = this->getCarRotation();
+    float theta = this->getCarDirection()[X_AXIS] * this->getWheelDirection()[X_AXIS] + this->getCarDirection()[Y_AXIS] * this->getWheelDirection()[Y_AXIS];
+
+    theta = acos(theta);
+    CAR_ROTATION_STEP *= tan(theta); //Adjusting curve sensitivity
+
+    theta *= 180/M_PI;
+
+    if(this->getCarRotation() + this->getWheelRotation() < this->getCarRotation())
+        theta *= -1;
+
+    if(randomDirection)
+    {
+        if(theta > 0) //wheel curved to left
+        {
+            carRotation += CAR_ROTATION_STEP;
+            this->setCarRotation(carRotation);
+            this->setWheelRotation(this->getWheelRotation());
+            // this->setWheelRotation(this->getWheelRotation() - CAR_ROTATION_STEP);
+        }
+        else if (theta < 0) //Wheel curved to right
+        {
+            carRotation -= CAR_ROTATION_STEP;
+            this->setCarRotation(carRotation);
+            this->setWheelRotation(this->getWheelRotation());
+            // this->setWheelRotation(this->getWheelRotation() + CAR_ROTATION_STEP);
+        }
+
+        position[X_AXIS] = (this->getCarSpeed() * timeDif * cos(this->getCarRotation() * M_PI / 180.0));
+        position[Y_AXIS] = (this->getCarSpeed() * timeDif * sin(this->getCarRotation() * M_PI / 180.0));
+        position[Z_AXIS] = 0;
+    }
+    else
+    {
+        if(theta > 0) //wheel curved to left
+        {
+            carRotation -= CAR_ROTATION_STEP;
+            this->setCarRotation(carRotation);
+            this->setWheelRotation(this->getWheelRotation());
+            // this->setWheelRotation(this->getWheelRotation() - CAR_ROTATION_STEP);
+        }
+        else if (theta < 0) //Wheel curved to right
+        {
+            carRotation += CAR_ROTATION_STEP;
+            this->setCarRotation(carRotation);
+            this->setWheelRotation(this->getWheelRotation());
+            // this->setWheelRotation(this->getWheelRotation() + CAR_ROTATION_STEP);
+        }
+
+        position[X_AXIS] = -(this->getCarSpeed() * timeDif * cos(this->getCarRotation() * M_PI / 180.0));
+        position[Y_AXIS] = -(this->getCarSpeed() * timeDif * sin(this->getCarRotation() * M_PI / 180.0));
         position[Z_AXIS] = 0;
     }
 
