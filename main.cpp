@@ -16,11 +16,11 @@ using namespace std;
 
 //Global variables
 Janela MainWindow;
-vector<Circulo> enemies;
+list<Carro> enemies;
 Circulo arena[2];
 Retangulo rect;
 Carro player;
-list<Tiro> shoots;
+list<Tiro> playerShots, enemiesShots;
 
 int key_status[256] = {0};
 

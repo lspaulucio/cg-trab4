@@ -3,9 +3,9 @@
 extern Janela MainWindow;
 extern Circulo arena[2];
 extern Retangulo rect;
-extern vector<Circulo> enemies;
+extern list<Carro> enemies;
 extern Carro player;
-extern list<Tiro> shoots;
+extern list<Tiro> playerShots, enemiesShots;
 extern int key_status[256];
 
 void readXMLFile(const char *path)
@@ -62,8 +62,16 @@ void readXMLFile(const char *path)
     player.setShotSpeed(pElem->FindAttribute("velTiro")->FloatValue());
     player.setCarSpeed(pElem->FindAttribute("velCarro")->FloatValue());
 
-    // cout << "velTiro " << velTiro << endl;
-    // cout << "velCarro " << velCarro << endl;
+    pElem = pRoot->FirstChildElement("carroInimigo");
+
+    float enemyShotFrequence, enemyCarSpeed, enemyShotSpeed;
+    enemyShotFrequence = pElem->FindAttribute("freqTiro")->FloatValue();
+    enemyCarSpeed = pElem->FindAttribute("velCarro")->FloatValue();
+    enemyShotSpeed = pElem->FindAttribute("velTiro")->FloatValue();
+
+//     cout << "shootFreq " << enemyShootFrequence << endl;
+//     cout << "velTiro " << enemyShootSpeed << endl;
+//     cout << "velCarro " << enemyCarVelocity << endl;
 
     //Path and name to svg file
 
@@ -139,7 +147,15 @@ void readXMLFile(const char *path)
                             arena[0] = c;
                         }
                 }
-                else enemies.push_back(c);
+                else
+                {
+                    Carro e;
+                    e.copyInfo(c);
+                    e.setShootFrequence(enemyShotFrequence);
+                    e.setCarSpeed(enemyCarSpeed);
+                    e.setShotSpeed(enemyShotSpeed);
+                    enemies.push_back(e);
+                }
         }
         else if(!tipo.compare("rect")) //If is a rectangle
             {
@@ -164,7 +180,7 @@ void readXMLFile(const char *path)
 
     MainWindow.setHeight(2*arena[0].getRadius());
     MainWindow.setWidth(2*arena[0].getRadius());
-    MainWindow.setTitle("Arena");
+    MainWindow.setTitle("Jogo Canhao");
 
     //Adjusting Y-Axis -> y = hy - y;  and Change center coordinate to (R,R)
 
@@ -184,7 +200,7 @@ void readXMLFile(const char *path)
     rect.updateVertices();
     // cout << "x: " << rect.getXc() << "y: " << rect.getYc() << endl;
 
-    for(vector<Circulo>::iterator it = enemies.begin(); it != enemies.end(); it++)
+    for(list<Carro>::iterator it = enemies.begin(); it != enemies.end(); it++)
     {
         (*it).setXc((*it).getXc() - dx);
         (*it).setYc((*it).getYc() - dy);
@@ -195,7 +211,7 @@ void readXMLFile(const char *path)
     player.setYc(player.getYc() - dy);
     player.setYc(MainWindow.getHeight() - player.getYc());
 
-    // for(vector<Circulo>::iterator it = enemies.begin(); it != enemies.end(); it++)
+    // for(list<Carro>::iterator it = enemies.begin(); it != enemies.end(); it++)
     // cout << (*it).getId() << endl;
 
     return;
@@ -254,29 +270,91 @@ void init(void)
     glOrtho(0.0, 2*arena[0].getRadius(), 0.0, 2*arena[0].getRadius(), -1.0, 1.0);
 }
 
+//Clock variables
+void *font = GLUT_BITMAP_HELVETICA_18;
+char str[500];
+bool START_FLAG = false;
+
+void printTime(GLfloat x, GLfloat y) //Printing elapsed time
+{
+    static GLdouble previousTime = 0;
+    static int seconds = 0;
+    GLdouble currentTime;
+    GLdouble timeDiference;
+
+    currentTime = glutGet(GLUT_ELAPSED_TIME);
+
+    if(START_FLAG)
+    {
+        timeDiference = currentTime - previousTime; // Elapsed time from the previous frame.
+        // Elapsed time from the initiation of the game.
+
+        if (timeDiference >= 1000)
+        {
+            seconds++;
+            previousTime = currentTime + (timeDiference - 1000); //Update previous time
+        }
+    }
+
+    glColor3f(0.0,0.0,0.0);
+    //Create a string to be printed
+    char *tmpStr;
+    sprintf(str, "Elapsed Time: %d s", seconds);
+    //Define the position to start printing
+    glRasterPos2f(x, y);
+    //Print  the first Char with a certain font
+    //glutBitmapLength(font,(unsigned char*)str);
+    tmpStr = str;
+    //Print each of the other Char at time
+    while( *tmpStr )
+    {
+        glutBitmapCharacter(font, *tmpStr);
+        tmpStr++;
+    }
+}
+
+bool WIN_FLAG = false;
+bool LOSE_FLAG = false;
+
 void display(void)
 {
     /*Cleaning pixels */
     glClear(GL_COLOR_BUFFER_BIT);
 
-    for(int i=0; i < 2; i++)
-        arena[i].draw();
+    if(WIN_FLAG)
+        printMessage(MainWindow.getWidth()/4, MainWindow.getHeight()/2, "Congratulations!!! You won the game");
+    else if(LOSE_FLAG)
+            printMessage(MainWindow.getWidth()/4, MainWindow.getHeight()/2, "Game Over!!!   An enemy hit you");
+         else
+        {
+            printTime(MainWindow.getWidth() - MainWindow.getWidth() / 4, MainWindow.getHeight() - 20);
 
-    rect.draw();
+            for (int i = 0; i < 2; i++)
+                arena[i].draw();
 
-    for(vector<Circulo>::iterator it = enemies.begin(); it != enemies.end(); it++)
-        (*it).draw();
+            rect.draw();
 
-    player.draw();
+            for (list<Carro>::iterator it = enemies.begin(); it != enemies.end(); it++)
+                (*it).draw('e');
 
-    for(list<Tiro>::iterator it = shoots.begin(); it != shoots.end(); it++)
-        (*it).draw();
+            player.draw();
 
+            for (list<Tiro>::iterator it = playerShots.begin(); it != playerShots.end(); it++)
+                (*it).draw();
+
+            for (list<Tiro>::iterator it = enemiesShots.begin(); it != enemiesShots.end(); it++)
+                (*it).draw();
+        }
     glutSwapBuffers();
 }
 
 void idle(void)
 {
+    //Variables to check victory
+    static float finish_line[2] = {player.getXc(), player.getYc() - 1};
+    static float yp_old = player.getYc();
+    static int win = 0;
+
     float tx, ty;
     const float WHEEL_ROTATION_STEP = 1;
     float wheelTheta = player.getWheelRotation();
@@ -296,22 +374,26 @@ void idle(void)
         p = player.move(true, timeDiference);
         move_vector[X_AXIS] = p[X_AXIS];
         move_vector[Y_AXIS] = p[Y_AXIS];
+        START_FLAG = true;
     }
     if(key_status['s'])
     {
         p = player.move(false, timeDiference);
         move_vector[X_AXIS] = p[X_AXIS];
         move_vector[Y_AXIS] = p[Y_AXIS];
+        START_FLAG = true;
     }
     if(key_status['d'])
     {
         wheelTheta -= WHEEL_ROTATION_STEP;
         player.setWheelRotation(wheelTheta);
+        START_FLAG = true;
     }
     if(key_status['a'])
     {
         wheelTheta += WHEEL_ROTATION_STEP;
         player.setWheelRotation(wheelTheta);
+        START_FLAG = true;
     }
 
     // Collision verification
@@ -323,7 +405,7 @@ void idle(void)
     // Test new position x
     player.setXc(tx + move_vector[X_AXIS]);
 
-    for(vector<Circulo>::iterator it = enemies.begin(); it != enemies.end(); it++)
+    for(list<Carro>::iterator it = enemies.begin(); it != enemies.end(); it++)
     {
         teste = teste && (*it).outsideCircle(player);
     }
@@ -337,7 +419,7 @@ void idle(void)
     // Test new position y
     player.setYc(ty + move_vector[Y_AXIS]);
 
-    for(vector<Circulo>::iterator it = enemies.begin(); it != enemies.end(); it++)
+    for(list<Carro>::iterator it = enemies.begin(); it != enemies.end(); it++)
     {
         teste = teste && (*it).outsideCircle(player);
     }
@@ -347,25 +429,96 @@ void idle(void)
     {
         player.setYc(ty);
     }
-
     // End collision verification
 
-    //Shot moving
-    for(list<Tiro>::iterator it = shoots.begin(); it != shoots.end(); it++)
+
+//    ///////////////////////////////////////// ENEMIES SHOTS ////////////////////////////////////////
+    static float shotTime = 0;
+    static float shotPeriod = 1/enemies.begin()->getShootFrequence();
+    shotTime += timeDiference;
+    //cout << shotTime << endl;
+    if(shotTime >= shotPeriod)
+    {
+        for(list<Carro>::iterator it = enemies.begin(); it != enemies.end(); it++)
+        {
+            Tiro t = it->shoot();
+            enemiesShots.push_back(t);
+        }
+        shotTime = 0 + shotTime - shotPeriod;
+    }
+
+//  /////////////////////////////////// Shot moving /////////////////////////////////////////////////
+
+    //Player shots
+    for(list<Tiro>::iterator it = playerShots.begin(); it != playerShots.end(); it++)
     {
         (*it).move(timeDiference);
 
+
         if(!(*it).isInWindow(0.0, 0.0, 2*arena[0].getRadius(), 2*arena[0].getRadius()))
         {
-            it = shoots.erase(it);
-            if(shoots.empty())
+            it = playerShots.erase(it);
+            if(playerShots.empty())
+            {
                 break;
+            }
         }
 
+        //Checking hits
+        for(list<Carro>::iterator en = enemies.begin(); en != enemies.end(); en++)
+        {
+            if(!en->outsideCircle(*it)) //If player hit an enemy exclude this enemy
+            {
+                en = enemies.erase(en);
+                it = playerShots.erase(it);
+            }
+        }
+    }
+
+    //Enemy shots
+    for(list<Tiro>::iterator it = enemiesShots.begin(); it != enemiesShots.end(); it++)
+    {
+        (*it).move(timeDiference);
+
+        //Checking hit
+        if(player.insideCircle((*it))) //If an enemy hits player show end game message
+        {
+            LOSE_FLAG = true;
+        }
+
+        if(!(*it).isInWindow(0.0, 0.0, 2*arena[0].getRadius(), 2*arena[0].getRadius()))
+        {
+            it = enemiesShots.erase(it);
+            if(enemiesShots.empty())
+                break;
+        }
     }
 //    cout << shoots.size() << endl;
 
+//    //////////////////////////////// End shot moving //////////////////////////////////////////////
+
+//    /////////////////////////////////////// Checking victory /////////////////////////////////////////
+
+    if(player.getXc() > rect.getVertices(0,X_AXIS) && player.getXc() < rect.getVertices(3,X_AXIS))
+    {
+        if(player.getYc() > finish_line[Y_AXIS] && yp_old < finish_line[Y_AXIS]) {
+            win++;
+        }
+        else if(player.getYc() < finish_line[Y_AXIS] && yp_old > finish_line[Y_AXIS]) {
+            win--;
+        }
+    }
+
+    yp_old = player.getYc();
+//    cout << win << endl;
+    if(win == 1) {
+        WIN_FLAG = true;
+    }
+//            cout << "Win" << endl;
+// ///////////////////////////////////// End Check Victory ///////////////////////////////////////////
+
     glutPostRedisplay();
+
 }
 
 void keyUp (unsigned char key, int x, int y)
@@ -447,7 +600,8 @@ void mouse(int key, int state, int x, int y)
         player.setGunRotation(theta);
 
         Tiro t = player.shoot();
-        shoots.push_back(t);
+//        cout << "ShotID " << t.getId() << endl;
+        playerShots.push_back(t);
     }
 }
 
@@ -459,5 +613,22 @@ void passiveMouse(int x, int y)
     player.setGunRotation(theta);
 
     // cout << player.getGunRotation() << endl;
+}
 
+void printMessage(int x, int y, const char* message)
+{
+    void *font = GLUT_BITMAP_TIMES_ROMAN_24;
+    const char *tmpStr;
+    glColor3f(0.0,0.0,0.0);
+    //Define the position to start printing
+    glRasterPos2f(x, y);
+    //Print  the first Char with a certain font
+    //glutBitmapLength(font,(unsigned char*)str);
+    tmpStr = message;
+    //Print each of the other Char at time
+    while( *tmpStr )
+    {
+        glutBitmapCharacter(font, *tmpStr);
+        tmpStr++;
+    }
 }

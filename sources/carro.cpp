@@ -37,6 +37,16 @@ void Carro::setMoving(bool moving)
     this->moving = moving;
 }
 
+void Carro::setShootFrequence(float freq)
+{
+    this->shootFrequence = freq;
+}
+
+float Carro::getShootFrequence()
+{
+    return this->shootFrequence;
+}
+
 float Carro::getCarSpeed() const
 {
     return carSpeed;
@@ -156,7 +166,7 @@ void Carro::setWheelRotation(float rotation)
     // cout << "Roda: x = " << getWheelDirection()[X_AXIS] << " " << "y = " << getWheelDirection()[Y_AXIS] << endl;
 }
 
-void Carro::draw()
+void Carro::draw(char type)
 {
     //Car parameters
     float carWidth = 140;
@@ -183,8 +193,16 @@ void Carro::draw()
         glTranslatef(this->getXc(), this->getYc(), 0);
         glRotated(ROTATION_CORRECTION + this->getCarRotation(), 0.0, 0.0, 1.0);
         glScalef(scale_factor, scale_factor, 1);
-            drawRectangle(-carWidth/2, carHeight/2, carWidth/2, -carHeight/2, BODY_COLOR);
-            drawEllipse(0.0, 0.0, ellipseSmallAxis, ellipseBigAxis, ELLIPSE_COLOR);
+            if(type == 'e')
+            {
+                drawRectangle(-carWidth / 2, carHeight / 2, carWidth / 2, -carHeight / 2, ENEMY_BODY_COLOR);
+                drawEllipse(0.0, 0.0, ellipseSmallAxis, ellipseBigAxis, ENEMY_ELLIPSE_COLOR);
+            }
+            else
+            {
+                drawRectangle(-carWidth / 2, carHeight / 2, carWidth / 2, -carHeight / 2, BODY_COLOR);
+                drawEllipse(0.0, 0.0, ellipseSmallAxis, ellipseBigAxis, ELLIPSE_COLOR);
+            }
 //            drawCircle(0.0, 0.0, this->getRadius()/scale_factor);
 
         glPushMatrix();
@@ -193,7 +211,12 @@ void Carro::draw()
             glPushMatrix();
                 //drawing gun
                 glRotated(this->getGunRotation(), 0.0, 0.0, 1);
-                drawRectangle(-gunWidth/2, gunHeight, gunWidth/2, 0.0, GUN_COLOR);
+
+                if(type == 'e')
+                    drawRectangle(-gunWidth/2, gunHeight, gunWidth/2, 0.0, ENEMY_GUN_COLOR);
+                else
+                    drawRectangle(-gunWidth/2, gunHeight, gunWidth/2, 0.0, GUN_COLOR);
+
             glPopMatrix();
 
             //drawing wheels and axis
@@ -442,6 +465,7 @@ Tiro Carro::shoot()
 //    cout << "t " << xc << " " << yc<< endl;
     shot.setXc(xc);
     shot.setYc(yc);
+    shot.setId(this->getId());
     shot.setShootSpeed(this->getShotSpeed());
     shot.setShootRotation(getCarRotation()+getGunRotation());
     shot.setShootDirection(X_AXIS, this->getGunDirection()[X_AXIS]);

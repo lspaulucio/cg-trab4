@@ -23,12 +23,14 @@ void readXMLFile(const char *path);
 
 //OpenGL functions
 void init(void);
+void printTime(GLfloat x, GLfloat y);
 void display(void);
 void idle(void);
 void mouse(int key, int state, int x, int y);
 void keypress (unsigned char key, int x, int y);
 void keyUp (unsigned char key, int x, int y);
 void passiveMouse(int x, int y);
+void printMessage(int x, int y, const char* message);
 
 //Drawing functions
 void drawRectangle(float x1, float y1, float x2, float y2, const float colors[3] = DEFAULT_COLOR);
