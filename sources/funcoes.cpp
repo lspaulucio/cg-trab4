@@ -270,49 +270,6 @@ void init(void)
     glOrtho(0.0, 2*arena[0].getRadius(), 0.0, 2*arena[0].getRadius(), -1.0, 1.0);
 }
 
-//Clock variables
-void *font = GLUT_BITMAP_HELVETICA_18;
-char str[500];
-bool START_FLAG = false;
-
-void printTime(GLfloat x, GLfloat y) //Printing elapsed time
-{
-    static GLdouble previousTime = 0;
-    static int seconds = 0;
-    GLdouble currentTime;
-    GLdouble timeDiference;
-
-    currentTime = glutGet(GLUT_ELAPSED_TIME);
-
-    if(START_FLAG)
-    {
-        timeDiference = currentTime - previousTime; // Elapsed time from the previous frame.
-        // Elapsed time from the initiation of the game.
-
-        if (timeDiference >= 1000)
-        {
-            seconds++;
-            previousTime = currentTime + (timeDiference - 1000); //Update previous time
-        }
-    }
-
-    glColor3f(0.0,0.0,0.0);
-    //Create a string to be printed
-    char *tmpStr;
-    sprintf(str, "Elapsed Time: %d s", seconds);
-    //Define the position to start printing
-    glRasterPos2f(x, y);
-    //Print  the first Char with a certain font
-    //glutBitmapLength(font,(unsigned char*)str);
-    tmpStr = str;
-    //Print each of the other Char at time
-    while( *tmpStr )
-    {
-        glutBitmapCharacter(font, *tmpStr);
-        tmpStr++;
-    }
-}
-
 bool WIN_FLAG = false;
 bool LOSE_FLAG = false;
 
@@ -347,6 +304,8 @@ void display(void)
         }
     glutSwapBuffers();
 }
+
+bool START_FLAG = false; //Flag to indicate beginning the game
 
 void idle(void)
 {
@@ -396,127 +355,130 @@ void idle(void)
         START_FLAG = true;
     }
 
-    // Collision verification
-    tx = player.getXc();
-    ty = player.getYc();
-
-    bool teste = true;
-
-    // Test new position x
-    player.setXc(tx + move_vector[X_AXIS]);
-
-    for(list<Carro>::iterator it = enemies.begin(); it != enemies.end(); it++)
+    if(START_FLAG)
     {
-        teste = teste && (*it).outsideCircle(player);
-    }
+        updateClock(timeDiference);
+        // Collision verification
+        tx = player.getXc();
+        ty = player.getYc();
 
-    if(arena[0].insideCircle(player) && arena[1].outsideCircle(player) && teste);
-    else
-    {
-        player.setXc(tx);
-    }
+        bool teste = true;
 
-    // Test new position y
-    player.setYc(ty + move_vector[Y_AXIS]);
+        // Test new position x
+        player.setXc(tx + move_vector[X_AXIS]);
 
-    for(list<Carro>::iterator it = enemies.begin(); it != enemies.end(); it++)
-    {
-        teste = teste && (*it).outsideCircle(player);
-    }
-
-    if(arena[0].insideCircle(player) && arena[1].outsideCircle(player) && teste);
-    else
-    {
-        player.setYc(ty);
-    }
-    // End collision verification
-
-
-//    ///////////////////////////////////////// ENEMIES SHOTS ////////////////////////////////////////
-    static float shotTime = 0;
-    static float shotPeriod = 1/enemies.begin()->getShootFrequence();
-    shotTime += timeDiference;
-    //cout << shotTime << endl;
-    if(shotTime >= shotPeriod)
-    {
-        for(list<Carro>::iterator it = enemies.begin(); it != enemies.end(); it++)
+        for (list<Carro>::iterator it = enemies.begin(); it != enemies.end(); it++)
         {
-            Tiro t = it->shoot();
-            enemiesShots.push_back(t);
+            teste = teste && (*it).outsideCircle(player);
         }
-        shotTime = 0 + shotTime - shotPeriod;
-    }
 
-//  /////////////////////////////////// Shot moving /////////////////////////////////////////////////
+        if (arena[0].insideCircle(player) && arena[1].outsideCircle(player) && teste);
+        else {
+            player.setXc(tx);
+        }
 
-    //Player shots
-    for(list<Tiro>::iterator it = playerShots.begin(); it != playerShots.end(); it++)
-    {
-        (*it).move(timeDiference);
+        // Test new position y
+        player.setYc(ty + move_vector[Y_AXIS]);
 
-
-        if(!(*it).isInWindow(0.0, 0.0, 2*arena[0].getRadius(), 2*arena[0].getRadius()))
+        for (list<Carro>::iterator it = enemies.begin(); it != enemies.end(); it++)
         {
-            it = playerShots.erase(it);
-            if(playerShots.empty())
+            teste = teste && (*it).outsideCircle(player);
+        }
+
+        if (arena[0].insideCircle(player) && arena[1].outsideCircle(player) && teste);
+        else
+        {
+            player.setYc(ty);
+        }
+        // End collision verification
+
+
+        //    ///////////////////////////////////////// ENEMIES SHOTS ////////////////////////////////////////
+        static float shotTime = 0;
+        static float shotPeriod = 1 / enemies.begin()->getShootFrequence();
+        shotTime += timeDiference;
+        //cout << shotTime << endl;
+        if (shotTime >= shotPeriod) {
+            for (list<Carro>::iterator it = enemies.begin(); it != enemies.end(); it++)
             {
-                break;
+                Tiro t = it->shoot();
+                enemiesShots.push_back(t);
             }
+            shotTime = 0 + shotTime - shotPeriod;
         }
 
-        //Checking hits
-        for(list<Carro>::iterator en = enemies.begin(); en != enemies.end(); en++)
+        //  /////////////////////////////////// Shot moving /////////////////////////////////////////////////
+
+        //Player shots
+        for (list<Tiro>::iterator it = playerShots.begin(); it != playerShots.end(); it++)
         {
-            if(!en->outsideCircle(*it)) //If player hit an enemy exclude this enemy
+            (*it).move(timeDiference);
+
+
+            if (!(*it).isInWindow(0.0, 0.0, 2 * arena[0].getRadius(), 2 * arena[0].getRadius()))
             {
-                en = enemies.erase(en);
                 it = playerShots.erase(it);
+                if (playerShots.empty()) {
+                    break;
+                }
+            }
+
+            //Checking hits
+            for (list<Carro>::iterator en = enemies.begin(); en != enemies.end(); en++)
+            {
+                if (!en->outsideCircle(*it)) //If player hit an enemy exclude this enemy
+                {
+                    en = enemies.erase(en);
+                    it = playerShots.erase(it);
+                }
             }
         }
-    }
 
-    //Enemy shots
-    for(list<Tiro>::iterator it = enemiesShots.begin(); it != enemiesShots.end(); it++)
-    {
-        (*it).move(timeDiference);
-
-        //Checking hit
-        if(player.insideCircle((*it))) //If an enemy hits player show end game message
+        //Enemy shots
+        for (list<Tiro>::iterator it = enemiesShots.begin(); it != enemiesShots.end(); it++)
         {
-            LOSE_FLAG = true;
-        }
+            (*it).move(timeDiference);
 
-        if(!(*it).isInWindow(0.0, 0.0, 2*arena[0].getRadius(), 2*arena[0].getRadius()))
+            //Checking hit
+            if (player.insideCircle((*it))) //If an enemy hits player show end game message
+            {
+                LOSE_FLAG = true;
+            }
+
+            if (!(*it).isInWindow(0.0, 0.0, 2 * arena[0].getRadius(), 2 * arena[0].getRadius()))
+            {
+                it = enemiesShots.erase(it);
+                if (enemiesShots.empty())
+                    break;
+            }
+        }
+        //    cout << shoots.size() << endl;
+
+        //    //////////////////////////////// End shot moving //////////////////////////////////////////////
+
+        //    /////////////////////////////////////// Checking victory /////////////////////////////////////////
+
+        if (player.getXc() > rect.getVertices(0, X_AXIS) && player.getXc() < rect.getVertices(3, X_AXIS))
         {
-            it = enemiesShots.erase(it);
-            if(enemiesShots.empty())
-                break;
+            if (player.getYc() > finish_line[Y_AXIS] && yp_old < finish_line[Y_AXIS])
+            {
+                win++;
+            } else if (player.getYc() < finish_line[Y_AXIS] && yp_old > finish_line[Y_AXIS])
+                    {
+                        win--;
+                    }
         }
-    }
-//    cout << shoots.size() << endl;
 
-//    //////////////////////////////// End shot moving //////////////////////////////////////////////
-
-//    /////////////////////////////////////// Checking victory /////////////////////////////////////////
-
-    if(player.getXc() > rect.getVertices(0,X_AXIS) && player.getXc() < rect.getVertices(3,X_AXIS))
-    {
-        if(player.getYc() > finish_line[Y_AXIS] && yp_old < finish_line[Y_AXIS]) {
-            win++;
+        yp_old = player.getYc();
+        //    cout << win << endl;
+        if (win == 1)
+        {
+            WIN_FLAG = true;
         }
-        else if(player.getYc() < finish_line[Y_AXIS] && yp_old > finish_line[Y_AXIS]) {
-            win--;
-        }
-    }
+        //            cout << "Win" << endl;
+        // ///////////////////////////////////// End Check Victory ///////////////////////////////////////////
 
-    yp_old = player.getYc();
-//    cout << win << endl;
-    if(win == 1) {
-        WIN_FLAG = true;
     }
-//            cout << "Win" << endl;
-// ///////////////////////////////////// End Check Victory ///////////////////////////////////////////
-
     glutPostRedisplay();
 
 }
@@ -615,6 +577,46 @@ void passiveMouse(int x, int y)
     // cout << player.getGunRotation() << endl;
 }
 
+//Clock variables
+void *font = GLUT_BITMAP_HELVETICA_18;
+char str[500];
+int seconds = 0;
+
+void printTime(GLfloat x, GLfloat y) //Printing elapsed time
+{
+    glColor3f(0.0,0.0,0.0);
+    //Create a string to be printed
+    char *tmpStr;
+    sprintf(str, "Elapsed Time: %d s", seconds);
+    //Define the position to start printing
+    glRasterPos2f(x, y);
+    //Print  the first Char with a certain font
+    //glutBitmapLength(font,(unsigned char*)str);
+    tmpStr = str;
+    //Print each of the other Char at time
+    while( *tmpStr )
+    {
+        glutBitmapCharacter(font, *tmpStr);
+        tmpStr++;
+    }
+}
+
+void updateClock(double time) {
+
+    const int SECOND = 1000;
+    static float elapsedTime = 0;
+    elapsedTime += time;
+    cout << elapsedTime << endl;
+
+    if (START_FLAG)
+    {
+        if (elapsedTime >= SECOND)
+        {
+            seconds++;
+            elapsedTime = (elapsedTime - SECOND); //Update previous time
+        }
+    }
+}
 void printMessage(int x, int y, const char* message)
 {
     void *font = GLUT_BITMAP_TIMES_ROMAN_24;

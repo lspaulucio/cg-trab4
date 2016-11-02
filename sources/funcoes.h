@@ -23,13 +23,14 @@ void readXMLFile(const char *path);
 
 //OpenGL functions
 void init(void);
-void printTime(GLfloat x, GLfloat y);
 void display(void);
 void idle(void);
 void mouse(int key, int state, int x, int y);
 void keypress (unsigned char key, int x, int y);
 void keyUp (unsigned char key, int x, int y);
 void passiveMouse(int x, int y);
+void printTime(GLfloat x, GLfloat y);
+void updateClock(double time);
 void printMessage(int x, int y, const char* message);
 
 //Drawing functions
