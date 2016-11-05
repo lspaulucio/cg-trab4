@@ -16,6 +16,7 @@ private:
     float shootFrequence;
     float carDirection[3], gunDirection[3], wheelDirection[3];
     float carRotation, gunRotation, wheelRotation;
+    int randomWheel, randomGun, randomDirection, randomTime;
 
 public:
     Carro();
@@ -66,7 +67,7 @@ public:
 
     float* move(bool direction, double time);
 
-    float* randomMove(double time);
+    float* randomMove(double time, int id);
 
     Tiro shoot();
 

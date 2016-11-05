@@ -270,6 +270,7 @@ void init(void)
     glOrtho(0.0, 2*arena[0].getRadius(), 0.0, 2*arena[0].getRadius(), -1.0, 1.0);
 }
 
+// Flags to check the result of the game
 bool WIN_FLAG = false;
 bool LOSE_FLAG = false;
 
@@ -284,7 +285,7 @@ void display(void)
             printMessage(MainWindow.getWidth()/4, MainWindow.getHeight()/2, "Game Over!!!   An enemy hit you");
          else
         {
-            printTime(MainWindow.getWidth() - MainWindow.getWidth() / 4, MainWindow.getHeight() - 20);
+            printClock(MainWindow.getWidth() - MainWindow.getWidth() / 4, MainWindow.getHeight() - 20);
 
             for (int i = 0; i < 2; i++)
                 arena[i].draw();
@@ -306,6 +307,7 @@ void display(void)
 }
 
 bool START_FLAG = false; //Flag to indicate beginning the game
+bool SHOT_FLAG = false;  //Flag to indicate the moment that the enemies will shoot
 
 void idle(void)
 {
@@ -314,11 +316,13 @@ void idle(void)
     static float yp_old = player.getYc();
     static int win = 0;
 
+    //Variables to control car's movements
     float tx, ty;
     const float WHEEL_ROTATION_STEP = 1;
     float wheelTheta = player.getWheelRotation();
     float move_vector[3] = {0}, *p = NULL;
 
+    //Variables to get time
     static GLdouble previousTime = 0;
     GLdouble currentTime;
     GLdouble timeDiference;
@@ -356,7 +360,8 @@ void idle(void)
     }
 
     if(START_FLAG) {
-        updateClock(timeDiference);
+        updateClock(timeDiference);   //Update clock
+        checkShotTime(timeDiference); //Check if is time to enemies shoot
         // Collision verification
         tx = player.getXc();
         ty = player.getYc();
@@ -389,10 +394,13 @@ void idle(void)
         // End player collision verification
 
 //      ///////////////////////////////////////// ENEMY COLISION VERIFICATION //////////////////////////////////////////
-
+        int i = 0;
         for(list<Carro>::iterator en = enemies.begin(); en != enemies.end(); en++)
         {
-            float *move_vector = en->randomMove(timeDiference);
+            float *p = en->randomMove(timeDiference, i++);
+            float move_vector[3] = {0};
+            move_vector[X_AXIS] = p[X_AXIS];
+            move_vector[Y_AXIS] = p[Y_AXIS];
 
 //            cout << "x " << move_vector[0] << " y " << move_vector[1] << endl;
 
@@ -427,6 +435,8 @@ void idle(void)
                     teste = teste && (*en).outsideCircle(*it);
             }
 
+            teste = teste && en->outsideCircle(player);
+
             if (arena[0].insideCircle(*en) && arena[1].outsideCircle(*en) && teste);
             else
             {
@@ -436,17 +446,13 @@ void idle(void)
         }
 
         //    ///////////////////////////////////////// ENEMIES SHOTS ////////////////////////////////////////
-        static float shotTime = 0;
-        static float shotPeriod = 1 / enemies.begin()->getShootFrequence();
-        shotTime += timeDiference;
-        //cout << shotTime << endl;
-        if (shotTime >= shotPeriod) {
-            for (list<Carro>::iterator it = enemies.begin(); it != enemies.end(); it++)
-            {
-                Tiro t = it->shoot();
+
+        if(SHOT_FLAG) {
+            for (list<Carro>::iterator en = enemies.begin(); en != enemies.end(); en++) {
+                Tiro t = en->shoot();
                 enemiesShots.push_back(t);
             }
-            shotTime = 0 + shotTime - shotPeriod;
+            SHOT_FLAG = false;
         }
 
         //  /////////////////////////////////// Shot moving /////////////////////////////////////////////////
@@ -485,6 +491,7 @@ void idle(void)
             if (player.insideCircle((*it))) //If an enemy hits player show end game message
             {
                 LOSE_FLAG = true;
+                START_FLAG = false;
             }
 
             if (!(*it).isInWindow(0.0, 0.0, 2 * arena[0].getRadius(), 2 * arena[0].getRadius()))
@@ -516,6 +523,7 @@ void idle(void)
         if (win == 1)
         {
             WIN_FLAG = true;
+            START_FLAG = false;
         }
         //            cout << "Win" << endl;
         // ///////////////////////////////////// End Check Victory ///////////////////////////////////////////
@@ -583,7 +591,7 @@ void keypress (unsigned char key, int x, int y)
         break;
 
        case 'e':
-         exit(1);
+         exit(0);
 
       default:
           break;
@@ -622,11 +630,10 @@ void passiveMouse(int x, int y)
 }
 
 //Clock variables
-void *font = GLUT_BITMAP_HELVETICA_18;
-char str[500];
+char str[100];
 int seconds = 0;
 
-void printTime(GLfloat x, GLfloat y) //Printing elapsed time
+void printClock(GLfloat x, GLfloat y) //Printing elapsed time
 {
     glColor3f(0.0,0.0,0.0);
     //Create a string to be printed
@@ -640,7 +647,7 @@ void printTime(GLfloat x, GLfloat y) //Printing elapsed time
     //Print each of the other Char at time
     while( *tmpStr )
     {
-        glutBitmapCharacter(font, *tmpStr);
+        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, *tmpStr);
         tmpStr++;
     }
 }
@@ -657,13 +664,25 @@ void updateClock(double time) {
         if (elapsedTime >= SECOND)
         {
             seconds++;
-            elapsedTime = (elapsedTime - SECOND); //Update previous time
+            elapsedTime -= SECOND; //Update previous time
         }
+    }
+}
+
+void checkShotTime(double time) {
+
+    static float shotTimer = 0;
+    const float shotPeriod = 1 / enemies.begin()->getShootFrequence();
+
+    shotTimer += time;
+    //cout << shotTime << endl;
+    if (shotTimer >= shotPeriod) {
+        shotTimer -= shotPeriod;
+        SHOT_FLAG = true;
     }
 }
 void printMessage(int x, int y, const char* message)
 {
-    void *font = GLUT_BITMAP_TIMES_ROMAN_24;
     const char *tmpStr;
     glColor3f(0.0,0.0,0.0);
     //Define the position to start printing
@@ -674,7 +693,7 @@ void printMessage(int x, int y, const char* message)
     //Print each of the other Char at time
     while( *tmpStr )
     {
-        glutBitmapCharacter(font, *tmpStr);
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, *tmpStr);
         tmpStr++;
     }
 }

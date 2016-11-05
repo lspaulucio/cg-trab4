@@ -17,6 +17,7 @@ Carro::Carro()
     this->setGunDirection(X_AXIS, 0);
     this->setGunDirection(Y_AXIS, 1);
     this->setGunDirection(Z_AXIS, 0);
+    this->randomWheel = this->randomGun = this->randomDirection = this->randomTime = 0;
 }
 
 void Carro::copyInfo(Circulo& circle)
@@ -186,7 +187,7 @@ void Carro::draw(char type)
     float exhaustFireHeight = carHeight/4;
     float CORRECTION_FACTOR = 5;
     float ROTATION_CORRECTION = -90.0; //Correction to make x axis to cos axis and y to sin axis
-    static int aux = 0;
+    static int animationAux = 0;
     float scale_factor = (this->getRadius()*2) / (carWidth + 2*wheelShaftWidth + 2*wheelLength);
 
     glPushMatrix();
@@ -234,13 +235,13 @@ void Carro::draw(char type)
                     //Wheel move effect
                     if(isMoving())
                     {
-                        if(aux / 5 == 0)
+                        if(animationAux / 5 == 0)
                         {
                             drawRectangle(-wheelWidth/2, wheelLength/4, wheelWidth/2, 0.0, DEFAULT_COLOR);
                             drawRectangle(-wheelWidth/2, -wheelLength/4, wheelWidth/2, -wheelLength/2, DEFAULT_COLOR);
                         }
 
-                        else if(aux /10 == 0 ){
+                        else if(animationAux /10 == 0 ){
                             drawRectangle(-wheelWidth/2, 0.0, wheelWidth/2, -wheelLength/4, DEFAULT_COLOR);
                             drawRectangle(-wheelWidth/2, wheelLength/2, wheelWidth/2, wheelLength/4, DEFAULT_COLOR);
                         }
@@ -258,13 +259,13 @@ void Carro::draw(char type)
                     //Wheel move effect
                     if(isMoving())
                     {
-                        if(aux / 5 == 0)
+                        if(animationAux / 5 == 0)
                         {
                             drawRectangle(-wheelWidth/2, wheelLength/4, wheelWidth/2, 0.0, DEFAULT_COLOR);
                             drawRectangle(-wheelWidth/2, -wheelLength/4, wheelWidth/2, -wheelLength/2, DEFAULT_COLOR);
                         }
 
-                        else if(aux /10 == 0 ){
+                        else if(animationAux /10 == 0 ){
                             drawRectangle(-wheelWidth/2, 0.0, wheelWidth/2, -wheelLength/4, DEFAULT_COLOR);
                             drawRectangle(-wheelWidth/2, wheelLength/2, wheelWidth/2, wheelLength/4, DEFAULT_COLOR);
                         }
@@ -283,7 +284,7 @@ void Carro::draw(char type)
 
                 if(isMoving()) //if car is moving draw fire
                 {
-                    if(aux % 4 == 0){
+                    if(animationAux % 4 == 0){
                         glPushMatrix();
                         glTranslatef(0.0, -carHeight/10, 0.0);
                         glColor3fv(YELLOW_COLOR);
@@ -320,8 +321,8 @@ void Carro::draw(char type)
                         glVertex3f(exhaustWidth / 4, 0.0, 0.0);
                         glEnd();
                     }
-                    if(++aux > 10)
-                        aux = 0;
+                    if(++animationAux > 10)
+                        animationAux = 0;
                 }
 
             glPopMatrix();
@@ -336,13 +337,13 @@ void Carro::draw(char type)
                     //Wheel move effect
                     if(isMoving())
                     {
-                        if(aux / 5 == 0)
+                        if(animationAux / 5 == 0)
                         {
                             drawRectangle(-wheelWidth/2, wheelLength/4, wheelWidth/2, 0.0, DEFAULT_COLOR);
                             drawRectangle(-wheelWidth/2, -wheelLength/4, wheelWidth/2, -wheelLength/2, DEFAULT_COLOR);
                         }
 
-                        else if(aux /10 == 0 ){
+                        else if(animationAux /10 == 0 ){
                             drawRectangle(-wheelWidth/2, 0.0, wheelWidth/2, -wheelLength/4, DEFAULT_COLOR);
                             drawRectangle(-wheelWidth/2, wheelLength/2, wheelWidth/2, wheelLength/4, DEFAULT_COLOR);
                         }
@@ -359,13 +360,13 @@ void Carro::draw(char type)
                     //Wheel move effect
                     if(isMoving())
                     {
-                        if(aux / 5 == 0)
+                        if(animationAux / 5 == 0)
                         {
                             drawRectangle(-wheelWidth/2, wheelLength/4, wheelWidth/2, 0.0, DEFAULT_COLOR);
                             drawRectangle(-wheelWidth/2, -wheelLength/4, wheelWidth/2, -wheelLength/2, DEFAULT_COLOR);
                         }
 
-                        else if(aux /10 == 0 ){
+                        else if(animationAux /10 == 0 ){
                             drawRectangle(-wheelWidth/2, 0.0, wheelWidth/2, -wheelLength/4, DEFAULT_COLOR);
                             drawRectangle(-wheelWidth/2, wheelLength/2, wheelWidth/2, wheelLength/4, DEFAULT_COLOR);
                         }
@@ -439,32 +440,21 @@ float* Carro::move(bool direction, double time)
     return position;
 }
 
-float* Carro::randomMove(double timeDif)
+float* Carro::randomMove(double timeDif, int id)
 {
-    static float position[3];
-    float CAR_ROTATION_STEP = 2;
-    static float elapsedTime = 0;
+    const int TIME = 1500;
 
-    int randomWheel, randomGun, randomDirection;
+    randomTime += timeDif;
 
-    elapsedTime += timeDif;
-
-    if(elapsedTime >= 1000) {
-        randomWheel = rand() % 1000;
-        randomGun = rand() % 1000;
-        randomDirection = rand() % 1000;
-        elapsedTime = elapsedTime - 1000;
+    if(randomTime >= TIME) {
+        this->randomWheel = rand() % 2;
+        this->randomGun = rand() % 2;
+        this->randomDirection = rand() % 2;
+        randomTime -= TIME;
+//        cout << id << " " << randomDirection << endl;
     }
 
-    if(randomDirection < 500)
-    {
-        randomDirection = 0;
-    }
-    else {
-        randomDirection = 1;
-    }
-
-    if(randomWheel < 500)
+    if(randomWheel < 1)
     {
         setWheelRotation(getWheelRotation() + 2);
     }
@@ -473,7 +463,7 @@ float* Carro::randomMove(double timeDif)
         setWheelRotation(getWheelRotation() - 2);
     }
 
-    if(randomGun < 500)
+    if(randomGun < 1)
     {
         setGunRotation(getGunRotation() + 2);
     }
@@ -482,61 +472,7 @@ float* Carro::randomMove(double timeDif)
         setGunRotation(getGunRotation() - 2);
     }
 
-    float carRotation = this->getCarRotation();
-    float theta = this->getCarDirection()[X_AXIS] * this->getWheelDirection()[X_AXIS] + this->getCarDirection()[Y_AXIS] * this->getWheelDirection()[Y_AXIS];
-
-    theta = acos(theta);
-    CAR_ROTATION_STEP *= tan(theta); //Adjusting curve sensitivity
-
-    theta *= 180/M_PI;
-
-    if(this->getCarRotation() + this->getWheelRotation() < this->getCarRotation())
-        theta *= -1;
-
-    if(randomDirection)
-    {
-        if(theta > 0) //wheel curved to left
-        {
-            carRotation += CAR_ROTATION_STEP;
-            this->setCarRotation(carRotation);
-            this->setWheelRotation(this->getWheelRotation());
-            // this->setWheelRotation(this->getWheelRotation() - CAR_ROTATION_STEP);
-        }
-        else if (theta < 0) //Wheel curved to right
-        {
-            carRotation -= CAR_ROTATION_STEP;
-            this->setCarRotation(carRotation);
-            this->setWheelRotation(this->getWheelRotation());
-            // this->setWheelRotation(this->getWheelRotation() + CAR_ROTATION_STEP);
-        }
-
-        position[X_AXIS] = (this->getCarSpeed() * timeDif * cos(this->getCarRotation() * M_PI / 180.0));
-        position[Y_AXIS] = (this->getCarSpeed() * timeDif * sin(this->getCarRotation() * M_PI / 180.0));
-        position[Z_AXIS] = 0;
-    }
-    else
-    {
-        if(theta > 0) //wheel curved to left
-        {
-            carRotation -= CAR_ROTATION_STEP;
-            this->setCarRotation(carRotation);
-            this->setWheelRotation(this->getWheelRotation());
-            // this->setWheelRotation(this->getWheelRotation() - CAR_ROTATION_STEP);
-        }
-        else if (theta < 0) //Wheel curved to right
-        {
-            carRotation += CAR_ROTATION_STEP;
-            this->setCarRotation(carRotation);
-            this->setWheelRotation(this->getWheelRotation());
-            // this->setWheelRotation(this->getWheelRotation() + CAR_ROTATION_STEP);
-        }
-
-        position[X_AXIS] = -(this->getCarSpeed() * timeDif * cos(this->getCarRotation() * M_PI / 180.0));
-        position[Y_AXIS] = -(this->getCarSpeed() * timeDif * sin(this->getCarRotation() * M_PI / 180.0));
-        position[Z_AXIS] = 0;
-    }
-
-    return position;
+    return move(randomDirection, timeDif);
 }
 
 Tiro Carro::shoot()
